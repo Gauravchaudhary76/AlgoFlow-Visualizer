@@ -14,6 +14,8 @@ JSON structure:
   "isCorrect": true,
   "bugs": [],
   "correctedCode": "",
+  "optimizationSuggestion": "Briefly explain how to make this code faster (e.g. O(n^2) to O(n))",
+  "optimizedCode": "// Write optimized code here",
   "timeComplexity": "O(n)",
   "spaceComplexity": "O(1)",
   "explanation": "2-3 sentences",
@@ -35,9 +37,9 @@ JSON structure:
   ]
 }
 
-Simulate every step on defaultInput. Keep msgs beginner-friendly (explain like teaching a 15 year old).
+Simulate every step on defaultInput. Keep msgs beginner-friendly.
 If invalid/not DSA: isValid=false, steps=[].
-If bugs: isCorrect=false, list bugs, correctedCode, simulate corrected version.`;
+Always suggest an optimized version in 'optimizedCode' if the input code is inefficient (e.g. suggest Merge Sort if input is Bubble Sort).`;
 
 const DEMOS = {
   remove_dup: {
@@ -185,6 +187,7 @@ function Dots({ label }) {
 const B = { padding:"8px 16px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", color:"#334155", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"inherit", transition:"all 0.15s" };
 
 export default function DSAAnalyzer() {
+  const [showOptimized, setShowOptimized] = useState(false);
   const [code, setCode] = useState(DEMOS.remove_dup.code);
   const [activeDemo, setActiveDemo] = useState("remove_dup");
   const [phase, setPhase] = useState("idle");
@@ -198,6 +201,7 @@ export default function DSAAnalyzer() {
   const SLABELS = ["Slowest","Slow","Normal","Fast","Fastest"];
 
   function loadDemo(key) {
+    setShowOptimized(false);
     setCode(DEMOS[key].code);
     setActiveDemo(key);
     setAnalysis(null);
@@ -209,7 +213,7 @@ export default function DSAAnalyzer() {
 
   async function analyze() {
     if (!code.trim()) return;
-    setPhase("analyzing"); setAnalysis(null); setError(""); setPlaying(false);
+    setShowOptimized(false);setPhase("analyzing"); setAnalysis(null); setError(""); setPlaying(false);
     clearTimeout(timerRef.current);
     try {
       const res = await fetch(GROQ_URL, {
@@ -300,6 +304,23 @@ export default function DSAAnalyzer() {
             <button onClick={analyze} disabled={phase==="analyzing"||!code.trim()} style={{ ...B, background:phase==="analyzing"?"#f1f5f9":"#7c3aed", color:phase==="analyzing"?"#94a3b8":"white", border:"none", padding:"10px 24px", fontSize:14, fontWeight:700 }}>
               {phase==="analyzing" ? <Dots label="Analyzing"/> : "Analyze + Visualize"}
             </button>
+            {analysis && (
+  <button 
+    onClick={() => setShowOptimized(!showOptimized)} 
+    style={{ 
+      ...B, 
+      background: "#7c3aed", 
+      color: "white", 
+      border: "none", 
+      padding: "10px 24px",  // Added to match
+      fontSize: 14,          // Added to match
+      fontWeight: 700,       // Added to match
+      marginLeft: 8 
+    }}
+  >
+    {showOptimized ? "Hide Optimization" : "✨ Optimize My Code"}
+  </button>
+)}
             {error && <span style={{ fontSize:12, color:"#ef4444", flex:1 }}>Error: {error}</span>}
           </div>
         </div>
@@ -334,6 +355,21 @@ export default function DSAAnalyzer() {
                     <pre style={{ margin:0, padding:"14px 16px", fontFamily:"monospace", fontSize:12, color:"#1e293b", lineHeight:1.7, overflowX:"auto", background:"#fafafa" }}>{analysis.correctedCode}</pre>
                   </div>
                 )}
+                {showOptimized && analysis.optimizedCode && (
+                <div style={{ ...card, border: "2px solid #7c3aed" }}>
+                <div style={{ ...ch, background: "#f5f3ff" }}>
+                <span style={{ ...lbl, color: "#7c3aed" }}>AI Optimization Suggestion</span>
+                </div>
+                <div style={{ padding: "14px 16px" }}>
+                <p style={{ fontSize: 13, color: "#5b21b6", marginBottom: 12, fontWeight: 600 }}>
+        💡      {analysis.optimizationSuggestion || "Here is a more efficient way to solve this:"}
+                 </p>
+               <pre style={{ margin: 0, padding: "14px 16px", fontFamily: "monospace", fontSize: 12, color: "#1e293b", lineHeight: 1.7, overflowX: "auto", background: "#f8fafc", borderRadius: 8, border: "1px solid #ddd" }}>
+               {analysis.optimizedCode}
+               </pre>
+               </div>
+               </div>
+                 )}
 
                 {analysis.howItWorks?.length > 0 && (
                   <div style={card}>
