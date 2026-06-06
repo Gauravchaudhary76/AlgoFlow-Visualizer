@@ -31,6 +31,7 @@ JSON structure:
       "eliminated": [],
       "swap": [],
       "pointers": {"0": "i"},
+      "vars": {"i": 0, "j": 1, "temp": "null"},
       "activeLine": 0,
       "msg": "beginner friendly message"
     }
@@ -182,6 +183,29 @@ function Dots({ label }) {
   const [d, setD] = useState(".");
   useEffect(() => { const t = setInterval(() => setD(p => p.length>=3?".":p+"."), 400); return () => clearInterval(t); }, []);
   return <span style={{ color:"#94a3b8", fontSize:13 }}>{label}{d}</span>;
+}
+function VariablesTable({ vars }) {
+  if (!vars || Object.keys(vars).length === 0) return null;
+  return (
+    <div style={{ marginTop: 12, background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <tr>
+            <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b", fontWeight: 700 }}>Variable</th>
+            <th style={{ padding: "6px 10px", textAlign: "left", color: "#64748b", fontWeight: 700 }}>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(vars).map(([name, val]) => (
+            <tr key={name} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <td style={{ padding: "6px 10px", fontFamily: "monospace", color: "#ef4444", fontWeight: 600 }}>{name}</td>
+              <td style={{ padding: "6px 10px", fontFamily: "monospace", color: "#0f172a" }}>{String(val)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 const B = { padding:"8px 16px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", color:"#334155", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"inherit", transition:"all 0.15s" };
@@ -395,6 +419,8 @@ export default function DSAAnalyzer() {
                       <div style={{ padding:16, borderRight:"1px solid #e2e8f0" }}>
                         <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Array state</div>
                         <ArrayViz step={cur} />
+                        <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginTop: 16 }}>Variable Tracker (Dry Run)</div>
+                      <VariablesTable vars={cur?.vars} />
                         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
                           {[["active","#dbeafe","#3b82f6"],["comparing","#fef3c7","#f59e0b"],["done","#dcfce7","#22c55e"],["swapping","#ede9fe","#8b5cf6"],["skipped","#f1f5f9","#cbd5e1"]].map(([l,bg,bd]) => (
                             <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
