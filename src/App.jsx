@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-
+import Editor from "@monaco-editor/react";
 const GROQ_API_KEY = import.meta.env.VITE_groqApi;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -209,7 +209,17 @@ function VariablesTable({ vars }) {
 }
 
 const B = { padding:"8px 16px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", color:"#334155", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"inherit", transition:"all 0.15s" };
+// Paste it here
+const getLanguage = (code) => {
+  if (code.includes("#include") || code.includes("vector")) return "cpp";
+  if (code.includes("def ") || code.includes("import ")) return "python";
+  if (code.includes("function") || code.includes("let ") || code.includes("const ")) return "javascript";
+  if (code.includes("public class") || code.includes("System.out")) return "java";
+  return "cpp"; 
+};
 
+
+  // ... rest of your code
 export default function DSAAnalyzer() {
   const [showOptimized, setShowOptimized] = useState(false);
   const [code, setCode] = useState(DEMOS.remove_dup.code);
@@ -323,7 +333,23 @@ export default function DSAAnalyzer() {
               <button key={key} onClick={() => loadDemo(key)} style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${activeDemo===key?"#3b82f6":"#e2e8f0"}`, background:activeDemo===key?"#dbeafe":"white", color:activeDemo===key?"#1e40af":"#64748b", cursor:"pointer", fontSize:11, fontFamily:"inherit", fontWeight:activeDemo===key?700:400, transition:"all 0.15s" }}>{d.label}</button>
             ))}
           </div>
-          <textarea value={code} onChange={e => setCode(e.target.value)} spellCheck={false} style={{ width:"100%", minHeight:160, padding:"14px 16px", border:"none", outline:"none", resize:"vertical", fontFamily:"'IBM Plex Mono',monospace", fontSize:13, lineHeight:1.7, color:"#1e293b", background:"#fafafa", boxSizing:"border-box", display:"block" }} />
+          <div style={{ height: "300px", borderTop: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9" }}>
+      <Editor
+    height="100%"
+    language={getLanguage(code)}
+    theme="vs-dark" // Change to "light" if you prefer white
+    value={code}
+    onChange={(value) => setCode(value)}
+    options={{
+      fontSize: 14,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      lineNumbers: "on",
+      fontFamily: "'IBM Plex Mono', monospace",
+      padding: { top: 10, bottom: 10 }
+    }}
+  />
+</div>
           <div style={{ padding:"10px 16px", borderTop:"1px solid #f1f5f9", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
             <button onClick={analyze} disabled={phase==="analyzing"||!code.trim()} style={{ ...B, background:phase==="analyzing"?"#f1f5f9":"#7c3aed", color:phase==="analyzing"?"#94a3b8":"white", border:"none", padding:"10px 24px", fontSize:14, fontWeight:700 }}>
               {phase==="analyzing" ? <Dots label="Analyzing"/> : "Analyze + Visualize"}
