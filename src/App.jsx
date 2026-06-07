@@ -11,6 +11,7 @@ const SYSTEM_PROMPT = `You are an expert DSA tutor. Respond ONLY with a valid JS
 JSON structure:
 {
   "isValid": true,
+  "visualType": "array", // ADD THIS: "array" or "linked-list"
   "language": "C++",
   "algorithmName": "name",
   "category": "Array/Sorting/Searching/etc",
@@ -141,18 +142,34 @@ function cellState(idx, step) {
   return "idle";
 }
 
-function ArrayViz({ step }) {
+function ArrayViz({ step, type }) {
   if (!step?.arr) return null;
+  const isLL = type === "linked-list";
+
   return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6, alignItems:"flex-end", minHeight:84, padding:"6px 0" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: isLL ? 0 : 6, alignItems: "center", minHeight: 84, padding: "10px 0" }}>
       {step.arr.map((val, idx) => {
         const s = COLORS[cellState(idx, step)];
         const ptr = step.pointers?.[idx];
         return (
-          <div key={idx} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-            <span style={{ fontSize:9, fontWeight:700, color:ptr?"#3b82f6":"transparent", fontFamily:"monospace", minHeight:12 }}>{ptr || "."}</span>
-            <div style={{ width:42, height:42, borderRadius:9, border:`2px solid ${s.border}`, background:s.bg, color:s.text, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, fontFamily:"monospace", transition:"all 0.3s" }}>{val}</div>
-            <span style={{ fontSize:9, color:"#94a3b8", fontFamily:"monospace" }}>[{idx}]</span>
+          <div key={idx} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: ptr ? "#3b82f6" : "transparent", minHeight: 12 }}>{ptr || "."}</span>
+              <div style={{ 
+                width: 42, height: 42, 
+                borderRadius: isLL ? "50%" : 9, // Circles for Linked List
+                border: `2px solid ${s.border}`, 
+                background: s.bg, color: s.text, 
+                display: "flex", alignItems: "center", justifyContent: "center", 
+                fontSize: 14, fontWeight: 700, transition: "all 0.3s" 
+              }}>{val}</div>
+              <span style={{ fontSize: 9, color: "#94a3b8" }}>[{idx}]</span>
+            </div>
+            
+            {/* ADD ARROW IF LINKED LIST */}
+            {isLL && idx < step.arr.length - 1 && (
+              <div style={{ fontSize: 20, color: "#cbd5e1", padding: "0 4px", marginTop: 10 }}>→</div>
+            )}
           </div>
         );
       })}
@@ -520,7 +537,7 @@ export default function DSAAnalyzer() {
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
                       <div style={{ padding:16, borderRight:"1px solid #e2e8f0" }}>
                         <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Array state</div>
-                        <ArrayViz step={cur} />
+                        <ArrayViz step={cur} type={analysis?.visualType} />
                         <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginTop: 16 }}>Variable Tracker (Dry Run)</div>
                       <VariablesTable vars={cur?.vars} />
                       <ComplexityChart currentComplexity={analysis?.timeComplexity} />
