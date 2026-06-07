@@ -11,7 +11,7 @@ AlgoFlow is a professional-grade, AI-powered platform for analyzing, debugging, 
 
 ## 🌐 Live Demo
 
-**Live Application:** https://your-app-url.vercel.app
+**Live Application:** https://algo-flow-visualizer.vercel.app/
 
 ---
 
