@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 const GROQ_API_KEY = import.meta.env.VITE_groqApi;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -219,7 +220,56 @@ const getLanguage = (code) => {
 };
 
 
-  // ... rest of your code
+const generateChartData = () => {
+  const data = [];
+  for (let n = 1; n <= 20; n++) {
+    data.push({
+      name: n,
+      "O(1)": 1,
+      "O(log n)": Math.log2(n),
+      "O(n)": n,
+      "O(n log n)": n * Math.log2(n),
+      "O(n²)": n * n,
+    });
+  }
+  return data;
+};
+
+ function ComplexityChart({ currentComplexity }) {
+  const data = generateChartData();
+  
+  // Clean up complexity string from AI (e.g., "O(n^2)" to "O(n²)")
+  const activeKey = currentComplexity?.replace("^2", "²").replace(" ", "");
+
+  return (
+    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, marginTop: 16 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>
+        Time Complexity Growth (Big O)
+      </div>
+      <div style={{ width: '100%', height: 250 }}>
+        <ResponsiveContainer>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis dataKey="name" hide />
+            <YAxis hide />
+            <Tooltip 
+              contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+            />
+            <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
+            <Line type="monotone" dataKey="O(1)" stroke="#94a3b8" strokeWidth={activeKey === "O(1)" ? 4 : 1} dot={false} />
+            <Line type="monotone" dataKey="O(log n)" stroke="#10b981" strokeWidth={activeKey === "O(log n)" ? 4 : 1} dot={false} />
+            <Line type="monotone" dataKey="O(n)" stroke="#3b82f6" strokeWidth={activeKey === "O(n)" ? 4 : 1} dot={false} />
+            <Line type="monotone" dataKey="O(n log n)" stroke="#f59e0b" strokeWidth={activeKey === "O(n log n)" ? 4 : 1} dot={false} />
+            <Line type="monotone" dataKey="O(n²)" stroke="#ef4444" strokeWidth={activeKey === "O(n²)" ? 4 : 1} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <p style={{ fontSize: 11, color: "#64748b", marginTop: 10, textAlign: "center" }}>
+        The chart shows how your algorithm's <b>{activeKey}</b> performance scales compared to others.
+      </p>
+    </div>
+  );
+}
 export default function DSAAnalyzer() {
   const [showOptimized, setShowOptimized] = useState(false);
   const [code, setCode] = useState(DEMOS.remove_dup.code);
@@ -447,6 +497,7 @@ export default function DSAAnalyzer() {
                         <ArrayViz step={cur} />
                         <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginTop: 16 }}>Variable Tracker (Dry Run)</div>
                       <VariablesTable vars={cur?.vars} />
+                      <ComplexityChart currentComplexity={analysis?.timeComplexity} />
                         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
                           {[["active","#dbeafe","#3b82f6"],["comparing","#fef3c7","#f59e0b"],["done","#dcfce7","#22c55e"],["swapping","#ede9fe","#8b5cf6"],["skipped","#f1f5f9","#cbd5e1"]].map(([l,bg,bd]) => (
                             <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
