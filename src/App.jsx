@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 const GROQ_API_KEY = import.meta.env.VITE_groqApi;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -294,7 +296,22 @@ export default function DSAAnalyzer() {
     setPlaying(false);
     clearTimeout(timerRef.current);
   }
+  // Paste it here
+  const exportPDF = async () => {
+    const element = document.getElementById("analysis-result");
+    if (!element) return;
+    
+    const canvas = await html2canvas(element, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${analysis.algorithmName}_Analysis.pdf`);
+  };
 
+  
   async function analyze() {
     if (!code.trim()) return;
     setShowOptimized(false);setPhase("analyzing"); setAnalysis(null); setError(""); setPlaying(false);
@@ -420,6 +437,15 @@ export default function DSAAnalyzer() {
   >
     {showOptimized ? "Hide Optimization" : "✨ Optimize My Code"}
   </button>
+  
+)}
+{analysis && (
+  <button 
+    onClick={exportPDF} 
+    style={{ ...B, background: "#10b981", color: "white", border: "none", padding: "10px 24px", fontSize: 14, fontWeight: 700, marginLeft: 8 }}
+  >
+    📥 Download PDF
+  </button>
 )}
             {error && <span style={{ fontSize:12, color:"#ef4444", flex:1 }}>Error: {error}</span>}
           </div>
@@ -427,7 +453,7 @@ export default function DSAAnalyzer() {
 
         {/* Results */}
         {analysis && (
-          <>
+          <div id="analysis-result" style={{ background:"#f8fafc", padding:"10px" }}>
             {analysis.isValid === false ? (
               <div style={{ background:"#fff7ed", border:"1px solid #fed7aa", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:"#9a3412", marginBottom:3 }}>Invalid or non-DSA code</div>
@@ -552,14 +578,13 @@ export default function DSAAnalyzer() {
                         <code style={{ fontSize:11, color:"#1e293b", background:"#f8fafc", padding:"2px 7px", borderRadius:4, flex:"0 0 auto", maxWidth:240, fontFamily:"monospace", whiteSpace:"pre-wrap", wordBreak:"break-all" }}>{item.line}</code>
                         <span style={{ fontSize:12, color:"#64748b", lineHeight:1.5 }}>{item.explain}</span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </>
+            ))}
+          </div>
         )}
-
+      </>
+    )}
+  </div>
+)}
         {phase==="idle" && !analysis && (
           <div style={{ textAlign:"center", padding:"44px 20px", color:"#94a3b8" }}>
             <div style={{ fontSize:36, marginBottom:12, fontFamily:"monospace" }}>{"</>"}</div>
