@@ -229,13 +229,33 @@ function VariablesTable({ vars }) {
 }
 
 const B = { padding:"8px 16px", borderRadius:8, border:"1px solid #e2e8f0", background:"white", color:"#334155", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"inherit", transition:"all 0.15s" };
-// Paste it here
+// Paste it her
 const getLanguage = (code) => {
-  if (code.includes("#include") || code.includes("vector")) return "cpp";
-  if (code.includes("def ") || code.includes("import ")) return "python";
-  if (code.includes("function") || code.includes("let ") || code.includes("const ")) return "javascript";
-  if (code.includes("public class") || code.includes("System.out")) return "java";
-  return "cpp"; 
+  if (!code || !code.trim()) return "plaintext"; // No colors until code is pasted
+
+  const c = code.trim();
+
+  // Python Detection
+  if (c.includes("def ") || c.includes("import ") || c.includes("print(") || c.endsWith(":")) {
+    return "python";
+  }
+
+  // C++ Detection
+  if (c.includes("#include") || c.includes("vector<") || c.includes("std::") || c.includes("cout <<") || c.includes("int main(")) {
+    return "cpp";
+  }
+
+  // Java Detection
+  if (c.includes("public class") || c.includes("static void main") || c.includes("System.out.print") || c.includes("String[] args")) {
+    return "java";
+  }
+
+  // JavaScript Detection
+  if (c.includes("const ") || c.includes("let ") || c.includes("function ") || c.includes("console.log") || c.includes("=>")) {
+    return "javascript";
+  }
+
+  return "plaintext"; // Fallback if it's unsure
 };
 
 
@@ -254,25 +274,34 @@ const generateChartData = () => {
   return data;
 };
 
- function ComplexityChart({ currentComplexity }) {
+function ComplexityChart({ currentComplexity, isDark }) {
   const data = generateChartData();
-  
-  // Clean up complexity string from AI (e.g., "O(n^2)" to "O(n²)")
   const activeKey = currentComplexity?.replace("^2", "²").replace(" ", "");
 
   return (
-    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, marginTop: 16 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>
+    <div style={{ 
+      background: isDark ? "#1e293b" : "white", 
+      border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`, 
+      borderRadius: 14, 
+      padding: 16, 
+      marginTop: 16 
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "#94a3b8" : "#64748b", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>
         Time Complexity Growth (Big O)
       </div>
       <div style={{ width: '100%', height: 250 }}>
         <ResponsiveContainer>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#f1f5f9"} />
             <XAxis dataKey="name" hide />
             <YAxis hide />
             <Tooltip 
-              contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+              contentStyle={{ 
+                background: isDark ? "#0f172a" : "white", 
+                border: "none", 
+                borderRadius: 8, 
+                color: isDark ? "#f8fafc" : "#0f172a" 
+              }} 
             />
             <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
             <Line type="monotone" dataKey="O(1)" stroke="#94a3b8" strokeWidth={activeKey === "O(1)" ? 4 : 1} dot={false} />
@@ -283,16 +312,13 @@ const generateChartData = () => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p style={{ fontSize: 11, color: "#64748b", marginTop: 10, textAlign: "center" }}>
-        The chart shows how your algorithm's <b>{activeKey}</b> performance scales compared to others.
-      </p>
     </div>
   );
 }
 export default function DSAAnalyzer() {
   const [showOptimized, setShowOptimized] = useState(false);
-  const [code, setCode] = useState(DEMOS.remove_dup.code);
-  const [activeDemo, setActiveDemo] = useState("remove_dup");
+  const [code, setCode] = useState(""); 
+  const [activeDemo, setActiveDemo] = useState(null); // No demo selected by default
   const [phase, setPhase] = useState("idle");
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState("");
@@ -302,7 +328,14 @@ export default function DSAAnalyzer() {
   const timerRef = useRef(null);
   const SPEEDS = [1600,900,500,220,80];
   const SLABELS = ["Slowest","Slow","Normal","Fast","Fastest"];
-
+  const [isDark, setIsDark] = useState(true);
+  const theme = {
+    bg: isDark ? "#0f172a" : "#f8fafc",
+    card: isDark ? "#1e293b" : "#ffffff",
+    text: isDark ? "#f8fafc" : "#0f172a",
+    subtext: isDark ? "#94a3b8" : "#64748b",
+    border: isDark ? "#334155" : "#e2e8f0",
+  };
   function loadDemo(key) {
     setShowOptimized(false);
     setCode(DEMOS[key].code);
@@ -313,6 +346,13 @@ export default function DSAAnalyzer() {
     setPlaying(false);
     clearTimeout(timerRef.current);
   }
+  const clearEditor = () => {
+  setCode("");
+  setActiveDemo(null);
+  setAnalysis(null);
+  setPhase("idle");
+  setError("");
+};
   // Paste it here
   const exportPDF = async () => {
     const element = document.getElementById("analysis-result");
@@ -388,12 +428,29 @@ export default function DSAAnalyzer() {
 
   const pb = { idle:{ label:"Idle", bg:"#f1f5f9", color:"#475569" }, analyzing:{ label:"Analyzing...", bg:"#dbeafe", color:"#1e40af" }, done:{ label:"Ready", bg:"#dcfce7", color:"#4c1d95" }, error:{ label:"Error", bg:"#fee2e2", color:"#991b1b" } }[phase] || { label:"Idle", bg:"#f1f5f9", color:"#475569" };
 
-  const card = { background:"white", border:"1px solid #e2e8f0", borderRadius:14, overflow:"hidden", marginBottom:16 };
-  const ch = { padding:"10px 16px", borderBottom:"1px solid #f1f5f9", background:"#fafafa", display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" };
+  const card = { background: theme.card, 
+    border: `1px solid ${theme.border}`, 
+    borderRadius: 14, 
+    overflow: "hidden", 
+    marginBottom: 16 };
+  const ch = { padding: "10px 16px", 
+    borderBottom: `1px solid ${theme.border}`, 
+    background: isDark ? "#1e293b" : "#fafafa", 
+    display: "flex", 
+    alignItems: "center", 
+    gap: 10, 
+    flexWrap: "wrap"  };
   const lbl = { fontSize:11, fontWeight:700, color:"#64748b", letterSpacing:1, textTransform:"uppercase" };
 
   return (
-    <div style={{ fontFamily:"'IBM Plex Mono','Courier New',monospace", background:"#f8fafc", minHeight:"100vh", padding:"24px 16px", color:"#0f172a" }}>
+    <div style={{
+      fontFamily: "'IBM Plex Mono', monospace",
+      background: theme.bg,
+      color: theme.text,
+      minHeight: "100vh",
+      padding: "24px 16px",
+      transition: "all 0.3s ease"
+    }}>
       <div style={{ maxWidth:960, margin:"0 auto" }}>
 
         {/* Header */}
@@ -403,6 +460,12 @@ export default function DSAAnalyzer() {
             <h1 style={{ fontSize:24, fontWeight:800, margin:0, letterSpacing:-0.5, lineHeight:1.1 }}>Smart Algorithm<br/><span style={{ color:"#7c3aed" }}>{"&"} Visualizer</span></h1>
           </div>
           <span style={{ fontSize:11, fontWeight:600, padding:"3px 12px", borderRadius:20, background:pb.bg, color:pb.color }}>{pb.label}</span>
+          <button
+            onClick={() => setIsDark(!isDark)}
+            style={{ ...B, background: theme.card, color: theme.text, border: `1px solid ${theme.border}`, marginTop: 10 }}
+          >
+            {isDark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
         </div>
 
         {/* Code input */}
@@ -413,27 +476,50 @@ export default function DSAAnalyzer() {
           </div>
           <div style={{ padding:"10px 16px", borderBottom:"1px solid #f1f5f9", display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
             <span style={{ fontSize:10, color:"#94a3b8", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginRight:4 }}>Try a demo:</span>
+             <button 
+    onClick={() => {
+      setCode("");
+      setActiveDemo(null);
+      setAnalysis(null);
+      setPhase("idle");
+      setError("");
+    }} 
+    style={{ 
+      padding:"4px 12px", 
+      borderRadius:20, 
+      border:`1px solid ${activeDemo === null ? "#7c3aed" : theme.border}`, 
+      background: activeDemo === null ? "rgba(124, 58, 237, 0.1)" : "transparent", 
+      color: activeDemo === null ? "#7c3aed" : theme.subtext, 
+      cursor:"pointer", 
+      fontSize:11, 
+      fontWeight: 700,
+      transition:"all 0.15s" 
+    }}
+  >
+    + New / Clear
+  </button>
             {Object.entries(DEMOS).map(([key, d]) => (
               <button key={key} onClick={() => loadDemo(key)} style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${activeDemo===key?"#3b82f6":"#e2e8f0"}`, background:activeDemo===key?"#dbeafe":"white", color:activeDemo===key?"#1e40af":"#64748b", cursor:"pointer", fontSize:11, fontFamily:"inherit", fontWeight:activeDemo===key?700:400, transition:"all 0.15s" }}>{d.label}</button>
             ))}
           </div>
-          <div style={{ height: "300px", borderTop: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9" }}>
-      <Editor
-    height="100%"
-    language={getLanguage(code)}
-    theme="vs-dark" // Change to "light" if you prefer white
-    value={code}
-    onChange={(value) => setCode(value)}
-    options={{
-      fontSize: 14,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      lineNumbers: "on",
-      fontFamily: "'IBM Plex Mono', monospace",
-      padding: { top: 10, bottom: 10 }
-    }}
-  />
-</div>
+          <div style={{ height: "300px", borderTop: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}` }}>
+            <Editor
+              height="100%"
+              language={getLanguage(code)}
+              theme={isDark ? "vs-dark" : "light"}
+              value={code}
+              onChange={(value) => setCode(value || "")}
+              options={{
+                fontSize: 14,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                lineNumbers: "on",
+                fontFamily: "'IBM Plex Mono', monospace",
+                padding: { top: 10, bottom: 10 },
+                automaticLayout: true,
+              }}
+            />
+          </div>
           <div style={{ padding:"10px 16px", borderTop:"1px solid #f1f5f9", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
             <button onClick={analyze} disabled={phase==="analyzing"||!code.trim()} style={{ ...B, background:phase==="analyzing"?"#f1f5f9":"#7c3aed", color:phase==="analyzing"?"#94a3b8":"white", border:"none", padding:"10px 24px", fontSize:14, fontWeight:700 }}>
               {phase==="analyzing" ? <Dots label="Analyzing"/> : "Analyze + Visualize"}
@@ -540,7 +626,7 @@ export default function DSAAnalyzer() {
                         <ArrayViz step={cur} type={analysis?.visualType} />
                         <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginTop: 16 }}>Variable Tracker (Dry Run)</div>
                       <VariablesTable vars={cur?.vars} />
-                      <ComplexityChart currentComplexity={analysis?.timeComplexity} />
+                     <ComplexityChart currentComplexity={analysis?.timeComplexity} isDark={isDark} />
                         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:10, paddingTop:10, borderTop:"1px solid #f1f5f9" }}>
                           {[["active","#dbeafe","#3b82f6"],["comparing","#fef3c7","#f59e0b"],["done","#dcfce7","#22c55e"],["swapping","#ede9fe","#8b5cf6"],["skipped","#f1f5f9","#cbd5e1"]].map(([l,bg,bd]) => (
                             <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
